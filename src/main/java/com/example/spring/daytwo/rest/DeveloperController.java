@@ -2,14 +2,17 @@ package com.example.spring.daytwo.rest;
 
 
 import com.example.spring.daytwo.model.Developer;
+import com.example.spring.daytwo.model.JuniorDeveloper;
+import com.example.spring.daytwo.model.MidDeveloper;
+import com.example.spring.daytwo.model.SeniorDeveloper;
 import com.example.spring.daytwo.tax.Taxable;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -36,12 +39,60 @@ public class DeveloperController {
         developers = new HashMap<>();
     }
 
-    public Map<Integer, Developer> getDevelopers() {
-        return developers;
+
+    @GetMapping("/")
+    public List<Developer> allDevelopers() {
+        System.out.println("Get all developers");
+        return developers.values().stream().toList();
     }
 
-    public void setDevelopers(Map<Integer, Developer> developers) {
-        this.developers = developers;
+    @GetMapping("/{id}")
+    public Developer findDevelopers(@PathVariable int id) {
+        return developers.get(id);
+    }
+
+    @PostMapping("/")
+    public String addDeveloper(@RequestBody Developer developer) {
+
+        switch (developer.getExperience()) {
+            case JUNIOR:
+                developer = new JuniorDeveloper(developer.getId(), developer.getName(), developer.getSalary(), developer.getExperience());
+                developer.setSalary(developer.getSalary() - developerTaxJunior.getSimpleTaxRate());
+                developers.put(developer.getId(), developer);
+                break;
+            case MID:
+                developer = new MidDeveloper(developer.getId(), developer.getName(), developer.getSalary(), developer.getExperience()) {
+                };
+                developer.setSalary(developer.getSalary() - developerTaxMid.getMiddleTaxRate());
+                developers.put(developer.getId(), developer);
+                break;
+            case SENIOR:
+                developer = new SeniorDeveloper(developer.getId(), developer.getName(), developer.getSalary(), developer.getExperience()) {
+                };
+                developer.setSalary(developer.getSalary() - developerTaxSenior.getUpperTaxRate());
+                developers.put(developer.getId(), developer);
+                break;
+        }
+        return "Developer added successfully";
+    }
+
+    @PutMapping("/{id}")
+    public String updateDeveloper(@PathVariable int id, @RequestBody Developer updatedDeveloper) {
+        if (developers.containsKey(id)) {
+            Developer developer = developers.get(id);
+            developer.setName(updatedDeveloper.getName());
+            developer.setSalary(updatedDeveloper.getSalary());
+            developer.setExperience(updatedDeveloper.getExperience());
+            developers.put(id, developer);
+            return "Developer with id " + id + " updated successfully";
+        } else {
+            return "Developer with id " + id + " not found";
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public Developer deleteDeveloper(@PathVariable int id) {
+        return developers.remove(id);
     }
 
 
